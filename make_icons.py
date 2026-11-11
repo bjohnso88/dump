@@ -6,4 +6,4 @@ for size, name in [(180, "apple-touch-icon.png"), (192, "icon-192.png"), (512, "
     r = size * 0.28
     c = size / 2
     d.ellipse([c - r, c - r, c + r, c + r], fill="#8fbcb0")
-    img.save(name)
+    img.quantize(colors=4).save(name, optimize=True)  # tiny file, same look
