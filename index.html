@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dump</title>
+  <meta name="theme-color" content="#1f2a2e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Dump">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <form id="add">
+    <input id="box" autofocus autocomplete="off" enterkeyhint="done"
+           placeholder="Dump it here…  (idea: for ideas)">
+  </form>
+
+  <nav>
+    <button data-view="todo" class="on">To-do</button>
+    <button data-view="ideas">Ideas</button>
+    <button data-view="week">This week</button>
+    <button data-view="wrap">Wrap up</button>
+  </nav>
+
+  <main id="view"></main>
+
+  <div id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
