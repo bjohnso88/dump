@@ -34,7 +34,7 @@ in the app. Any edit to the item clears it. See [[overview]] for the data model.
 
 `worker/push.js` builds the VAPID `Authorization` header (ES256 JWT signed with WebCrypto)
 and encrypts the payload as `aes128gcm` (RFC 8291). Keys come from the secrets
-`VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`, made by `npm run vapid` (`scripts/vapid.mjs`).
+`VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`, made by `npm run vapid` (`scripts/vapid.mjs`); see [[deploy-and-keys]].
 The subject is the `VAPID_SUBJECT` var.
 
 > ⚠️ The encryption was checked against the `http_ece` decoder before shipping. If you touch `encrypt`, check it the same way: a wrong byte fails silently on the push service side.

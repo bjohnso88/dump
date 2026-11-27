@@ -154,3 +154,14 @@ summary { color: var(--muted); font-size: 15px; padding: 10px 0; cursor: pointer
 
 .keyform { display: flex; flex-direction: column; gap: 12px; padding-top: 24px; }
 .keyform input { font-size: 18px; padding: 14px; border: 2px solid var(--line); border-radius: 12px; background: var(--card); color: var(--text); }
+
+/* ---------- edit panel ---------- */
+li { cursor: pointer; }
+li.open { outline: 2px solid var(--accent); }
+li button.check {
+  flex: none; width: 30px; height: 30px; min-height: 30px; padding: 0; border-radius: 50%;
+  border: 2px solid var(--muted); background: transparent; color: var(--card); font-size: 16px; line-height: 1;
+}
+li.done button.check { background: var(--accent); border-color: var(--accent); }
+.editor .edit-text { flex-basis: 100%; font-size: 17px; padding: 10px; }
+.editor .row button.danger { color: #c0605a; }
