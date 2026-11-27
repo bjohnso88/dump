@@ -11,7 +11,7 @@ sources:
   - code: worker/time.js
   - code: migrations/0001_init.sql
   - code: public/app.js
-verified_at: 3fe44c9
+verified_at: 261676c
 ---
 
 One Cloudflare Worker named `dump` does everything: it serves the app from `public/`
