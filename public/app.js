@@ -15,6 +15,7 @@ let view = 'todo';
 let editing = null;       // id of the item whose gray text is open for fixing
 let askEnergy = false;
 let busy = false;
+let laterOpen = false;   // keep the Later fold open while you edit inside it
 const kept = new Set();
 
 function cache() {
@@ -164,38 +165,91 @@ function dueLabel(due) {
   return label;
 }
 
-// The small gray "tomorrow 3pm · quick" line. Tap it to fix.
+// The small gray "tomorrow 3pm · quick" line. Tapping it (or the task) opens the edit panel.
 function meta(item) {
   const text = [dueLabel(item.due), item.size].filter(Boolean).join(' · ');
   const m = el('span', 'meta' + (text ? '' : ' faint'), text || 'add date');
-  m.onclick = (e) => { e.stopPropagation(); editing = editing === item.id ? null : item.id; render(); };
   return m;
 }
 
+// Update without re-rendering (used while typing, so taps on the panel's buttons still land).
+async function quietChange(item, patch) {
+  Object.assign(item, patch, { askOpen: false });
+  cache();
+  try { merge(await api('PATCH', '/items/' + encodeURIComponent(item.id), patch)); }
+  catch (e) { if (e.message !== 'auth') toast("Couldn't save. Check your signal."); }
+}
+
+const close = () => { editing = null; render(); };
+
+// The panel that opens when you tap a task or idea.
 function editor(item) {
   const ed = el('div', 'editor');
   ed.onclick = (e) => e.stopPropagation();
-  const [d, t] = (item.due || '').split('T');
-  const date = el('input'); date.type = 'date'; date.value = d || '';
-  const time = el('input'); time.type = 'time'; time.value = t || '';
-  const save = () => change(item, { due: date.value ? (time.value ? date.value + 'T' + time.value : date.value) : null });
-  date.onchange = save;
-  time.onchange = () => { if (!date.value) date.value = new Date().toLocaleDateString('en-CA'); save(); };
-  ed.append(date, time, button('No date', () => change(item, { due: null })));
-  const sizes = el('div', 'row');
-  for (const s of ['quick', 'medium', 'big']) {
-    sizes.append(button(s, () => change(item, { size: s }), item.size === s ? 'picked' : ''));
+
+  const text = el('input', 'edit-text');
+  text.value = item.text;
+  text.enterKeyHint = 'done';
+  text.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); text.blur(); } };
+  text.onblur = () => {
+    const v = text.value.trim();
+    if (!v || v === item.text) return;
+    quietChange(item, { text: v });
+    const span = text.closest('li')?.querySelector('.text');
+    if (span) span.textContent = v;
+  };
+  ed.append(text);
+
+  if (item.kind === 'todo') {
+    const when = el('div', 'row');
+    const [d, t] = (item.due || '').split('T');
+    const date = el('input'); date.type = 'date'; date.value = d || '';
+    const time = el('input'); time.type = 'time'; time.value = t || '';
+    const save = () => change(item, { due: date.value ? (time.value ? date.value + 'T' + time.value : date.value) : null });
+    date.onchange = save;
+    time.onchange = () => { if (!date.value) date.value = new Date().toLocaleDateString('en-CA'); save(); };
+    when.append(date, time, button('No date', () => change(item, { due: null })));
+    ed.append(when);
+
+    const sizes = el('div', 'row');
+    for (const s of ['quick', 'medium', 'big']) {
+      sizes.append(button(s, () => change(item, { size: s }), item.size === s ? 'picked' : ''));
+    }
+    ed.append(sizes);
   }
-  sizes.append(button('Done', () => { editing = null; render(); }));
-  ed.append(sizes);
+
+  const acts = el('div', 'row');
+  if (item.kind === 'todo') {
+    acts.append(
+      button(item.doneAt ? 'Not done' : 'Mark done', () => { editing = null; toggleDone(item); }),
+      button('→ Idea', () => { editing = null; change(item, { kind: 'idea' }); toast('Moved to ideas.'); }),
+    );
+  } else {
+    acts.append(button('→ To-do', () => {
+      editing = null; change(item, { kind: 'todo' }); smart(item.id); toast('Moved to to-dos.');
+    }));
+  }
+  acts.append(
+    button('Delete', () => { editing = null; remove(item.id); toast('Gone.'); render(); }, 'danger'),
+    button('Close', close),
+  );
+  ed.append(acts);
   return ed;
 }
 
-// A to-do row: tap = done, swipe/hold = delete, gray text = fix.
+function toggleDone(item) {
+  const doneAt = item.doneAt ? null : Date.now();
+  if (doneAt) toast(NICE[Math.floor(Math.random() * NICE.length)]);
+  change(item, { doneAt });
+}
+
+// A row. Circle = done, tap the task = edit panel, swipe/hold = delete.
 function li(item, buttons = [], opts = {}) {
   const e = el('li');
   e.dataset.id = item.id;
   if (item.doneAt) e.classList.add('done');
+  if (editing === item.id) e.classList.add('open');
+  if (item.kind === 'todo' && !opts.plain) e.append(button(item.doneAt ? '✓' : '', () => toggleDone(item), 'check'));
   const body = el('div', 'body');
   body.append(el('span', 'text', item.text));
   if (opts.why) body.append(el('span', 'why', opts.why));
@@ -203,16 +257,12 @@ function li(item, buttons = [], opts = {}) {
   if (item.kind === 'todo' && !item.doneAt && !opts.plain) body.append(meta(item));
   e.append(body, ...buttons);
   if (editing === item.id && !opts.plain) e.append(editor(item));
+  if (!opts.plain) e.onclick = () => { editing = editing === item.id ? null : item.id; render(); };
   return e;
 }
 
 function todoRow(item, opts) {
   const e = li(item, [], opts);
-  e.onclick = () => {
-    const doneAt = item.doneAt ? null : Date.now();
-    if (doneAt) toast(NICE[Math.floor(Math.random() * NICE.length)]);
-    change(item, { doneAt });
-  };
   makeDeletable(e, item.id);
   return e;
 }
@@ -222,7 +272,7 @@ function makeDeletable(e, id) {
   let startX = 0, dx = 0, timer = null, gesture = false, skip = false;
 
   e.addEventListener('touchstart', (ev) => {
-    skip = !!ev.target.closest('.editor, .meta, button');
+    skip = !!ev.target.closest('.editor, button');
     if (skip) return;
     startX = ev.touches[0].clientX;
     dx = 0;
@@ -341,6 +391,8 @@ function renderTodo(main) {
     const later = open.filter((i) => !pick.top.some((t) => t.id === i.id));
     if (later.length) {
       const det = el('details');
+      det.open = laterOpen || later.some((i) => i.id === editing);
+      det.ontoggle = () => { laterOpen = det.open; };
       det.append(el('summary', '', `Later (${later.length})`));
       const lu = el('ul');
       later.forEach((i) => lu.append(todoRow(i)));
@@ -358,7 +410,7 @@ function renderTodo(main) {
     [...open, ...done].forEach((i) => ul.append(todoRow(i)));
     main.append(ul);
   }
-  main.append(el('p', 'hint', 'Tap = done · swipe left or hold = delete · gray text = fix'));
+  main.append(el('p', 'hint', 'Circle = done · tap a task to edit · swipe left = delete'));
   footer(main);
 }
 
@@ -368,11 +420,7 @@ function renderIdeas(main) {
 
   const ul = el('ul');
   for (const item of list) {
-    const e = li(item, [button('→ To-do', () => {
-      change(item, { kind: 'todo' });
-      smart(item.id);
-      toast('Moved to to-dos.');
-    })]);
+    const e = li(item);
     makeDeletable(e, item.id);
     ul.append(e);
   }
