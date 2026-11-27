@@ -2,6 +2,7 @@
 import { smartParse, prioritize, shrink } from './claude.js';
 import { sendToAll } from './push.js';
 import { serveStatic } from './static.js';
+import { readDeadline } from './dates.js';
 import { safeTz, localParts, localToUtc, dueToUtc, DUE_RE } from './time.js';
 
 const DAY = 86400000;
@@ -110,13 +111,16 @@ async function route(req, env, url, ctx) {
     }
 
     if (m === 'POST' && mm[2] === '/smart') {
-      const got = await smartParse(env, row.text, localParts(now, tz), tz);
-      if (got) {
-        // Only fill blanks, never overwrite something you set by hand.
-        const due = row.due ?? got.due;
-        await env.DB.prepare('UPDATE items SET due = ?, due_at = ?, size = ? WHERE id = ?')
-          .bind(due, dueToUtc(due, tz), row.size ?? got.size, id).run();
-      }
+      // Deadline: Claude if it has a key and finds one, else the built-in reader (worker/dates.js).
+      const L = localParts(now, tz);
+      const got = await smartParse(env, row.text, L, tz);
+      const found = got?.due || readDeadline(row.text, L);
+      // On add, only fill blanks, never overwrite something set by hand.
+      // After you edit the text, a date written in the new text wins.
+      const due = body.edit && found ? found : (row.due ?? found ?? null);
+      const dueChanged = due !== row.due;
+      await env.DB.prepare(`UPDATE items SET due = ?, due_at = ?, size = ?${dueChanged ? ', reminded_at = NULL' : ''} WHERE id = ?`)
+        .bind(due, dueToUtc(due, tz), row.size ?? got?.size ?? null, id).run();
       return json(toItem(await getRow(env, id)));
     }
 

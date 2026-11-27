@@ -103,9 +103,9 @@ function commitDelete(id, leaving = false) {
   api('DELETE', '/items/' + encodeURIComponent(id), undefined, leaving).catch(() => {});
 }
 
-async function smart(id) {
+async function smart(id, edit = false) {
   try {
-    const item = await api('POST', '/items/' + encodeURIComponent(id) + '/smart');
+    const item = await api('POST', '/items/' + encodeURIComponent(id) + '/smart', edit ? { edit: true } : undefined);
     merge(item);
     render();
   } catch {}
@@ -236,7 +236,8 @@ function editor(item) {
   text.onblur = () => {
     const v = text.value.trim();
     if (!v || v === item.text) return;
-    quietChange(item, { text: v });
+    // Save, then re-read the new wording for a deadline ("...by friday").
+    quietChange(item, { text: v }).then(() => { if (item.kind === 'todo') smart(item.id, true); });
     const span = text.closest('li')?.querySelector('.text');
     if (span) span.textContent = v;
   };

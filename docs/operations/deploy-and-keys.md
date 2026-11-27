@@ -27,6 +27,8 @@ Run wrangler with placeholders; the proxy swaps in the real token:
 
 > ⚠️ The D1 schema was applied through the Cloudflare API, with a matching row added to `d1_migrations`. `wrangler d1 migrations apply dump --remote` therefore only runs new files. Never re-run `migrations/0001_init.sql` by hand: it has no `IF NOT EXISTS`.
 
+> ⚠️ Several sessions work on this repo, and `wrangler deploy` ships whatever is checked out. A session that deploys a branch missing another session's merged work silently removes that work from the live app (this happened to the deadline reader on 2026-11-27). Before deploying, merge the latest `origin/main` into your branch, and check `wrangler deployments list` if anything looks missing.
+
 > ⚠️ The Default cloud environment has no Cloudflare token on purpose. Don't add one there; it is shared by all of the user's repos.
 
 ## Recovering deleted items
