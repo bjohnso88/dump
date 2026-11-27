@@ -29,6 +29,19 @@ Run wrangler with placeholders; the proxy swaps in the real token:
 
 > ⚠️ The Default cloud environment has no Cloudflare token on purpose. Don't add one there; it is shared by all of the user's repos.
 
+## Recovering deleted items
+
+D1 Time Travel keeps 30 days of history, but reading an old state means restoring the live
+database in place. The way it was done on 2026-11-27: save the current bookmark
+(`GET .../d1/database/<id>/time_travel/bookmark`) and a full `SELECT * FROM items`, restore to
+timestamps every 15 minutes (`POST .../time_travel/restore?timestamp=`) and read `items` at each,
+then restore to the saved bookmark and check the rows match the backup. Ids seen earlier but
+missing now are the deleted items.
+
+> ⚠️ Restoring rewinds the whole live database. Anything written between the first restore and the restore back to the saved bookmark (app edits, the cron's `sent`/`reminded_at` writes) is lost. Ask the user first and tell them not to use the app meanwhile.
+
+> ⚠️ Sampling every 15 minutes misses an item that was added and deleted between two samples.
+
 ## Keys
 
 | Name | Kind | Set by |
