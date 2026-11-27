@@ -12,7 +12,7 @@ sources:
   - code: worker/dates.js
   - code: migrations/0001_init.sql
   - code: public/app.js
-verified_at: 261676c
+verified_at: 722fabf
 ---
 
 One Cloudflare Worker named `dump` does everything: it serves the app from `public/`
