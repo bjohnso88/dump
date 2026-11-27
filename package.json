@@ -1,0 +1,16 @@
+{
+  "name": "dump",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --test-scheduled",
+    "deploy": "wrangler deploy",
+    "vapid": "node scripts/vapid.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.14.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.168.0"
+  }
+}
