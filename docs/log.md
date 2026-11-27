@@ -45,3 +45,7 @@ Append-only. Newest entries at the bottom.
 ## [2026-11-27] deploy | date/time labels and size hint live
 
 - Deployed version 68fe1920 (the bundle imports `public/app.js` and `public/style.css` directly, `worker/static.js:4`). Not checked against the live site: this cloud session's proxy blocks dump.bixjohnson.com.
+
+## [2026-11-27] change | counts on the To-do and Ideas tabs
+
+- `counts()` in `public/app.js` (run from `render()`) puts the number of open to-dos and of ideas next to those tab names; nothing shows when the count is 0.

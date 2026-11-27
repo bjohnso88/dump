@@ -589,8 +589,24 @@ function render() {
   const main = $('#view');
   main.innerHTML = '';
   if (!token) return renderKey(main);
+  counts();
   if (query.trim()) return renderSearch(main);
   ({ todo: renderTodo, ideas: renderIdeas, week: renderWeek, wrap: renderWrap })[view](main);
+}
+
+// How many open to-dos and ideas there are, shown as a small number on the To-do and Ideas tabs.
+function counts() {
+  const n = {
+    todo: items.filter((i) => i.kind === 'todo' && !i.doneAt).length,
+    ideas: items.filter((i) => i.kind === 'idea').length,
+  };
+  for (const [v, c] of Object.entries(n)) {
+    const b = document.querySelector(`nav button[data-view="${v}"]`);
+    if (!b) continue;
+    let badge = b.querySelector('.count');
+    if (!badge) { badge = el('span', 'count'); b.append(badge); }
+    badge.textContent = c ? String(c) : '';
+  }
 }
 
 function setView(v) {
