@@ -9,6 +9,7 @@ sources:
   - code: worker/index.js
   - code: worker/claude.js
   - code: worker/time.js
+  - code: worker/dates.js
   - code: migrations/0001_init.sql
   - code: public/app.js
 verified_at: 261676c
@@ -53,6 +54,15 @@ shrink (a smaller version of a stale task). Each returns `null` on any failure a
 caller carries on: no date, or `plainPick` (due soonest, then oldest; `worker/index.js:41`).
 
 > ⚠️ Haiku 5.5 thinks by default and thinking counts toward `max_tokens`, so keep the 2000 cap (`worker/claude.js:6`). A small cap ends in `stop_reason: max_tokens` with no text.
+
+Deadlines also come from a built-in reader, `worker/dates.js` (`readDeadline`): "tomorrow 3pm",
+"12/1", "by friday", "dec 5th", "in 3 days", "eod", "next week". It runs with no Claude key, and
+covers whatever Claude misses. The client calls `/smart` again with `{edit: true}` after you
+change a task's text.
+
+> ⚠️ Short day names ("fri", "sun") only count after on/by/next/this/due/until, so "sit in the sun" isn't Sunday. Times need am/pm or "at H:MM", so "buy 2 apples" isn't 2 o'clock. Keep those guards if you extend the reader.
+
+> ⚠️ On a text edit, a date found in the new text replaces the old one (`body.edit`). On add it only fills a blank. Changing the due date clears `reminded_at` so the new time gets its reminder.
 
 > ⚠️ Smart add only fills blanks (`worker/index.js:111`). It runs after the item is saved, so it must never overwrite a date or size the user already set by hand.
 
