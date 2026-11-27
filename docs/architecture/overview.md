@@ -13,7 +13,7 @@ sources:
   - code: public/app.js
   - code: public/index.html
   - code: public/style.css
-verified_at: 52257b6
+verified_at: 72f8779
 ---
 
 One Cloudflare Worker named `dump` does everything: it serves the app from `public/`
@@ -50,6 +50,8 @@ in the browser (`renderSearch`), so it only finds what `/api/state` returned: op
 anything finished in the last 8 days.
 
 > ⚠️ Keep the iPhone safe-area padding on `#add` (`public/style.css`), not on `body`. With it on `body`, the sticky add box pins at `top: 0` under the status bar and notch in the home-screen app and looks like it scrolled away.
+
+> ⚠️ iPhone Safari draws an empty `<input type=date|time>` as a blank box. The edit panel's date and time inputs sit at `opacity: 0` on top of a `.pick` label that shows the value or "Pick date"/"Pick time" (`public/app.js` `editor`, `.editor .pick` in `public/style.css`). Don't make the inputs visible again or shrink them below the label: the tap has to land on the input to open the native picker.
 
 > ⚠️ `load()` must skip ids in `pendingDel`, or a re-fetch during the Undo window brings a deleted item back. `pagehide` sends pending deletes with `fetch(..., { keepalive: true })`.
 

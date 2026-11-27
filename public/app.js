@@ -245,18 +245,31 @@ function editor(item) {
   if (item.kind === 'todo') {
     const when = el('div', 'row');
     const [d, t] = (item.due || '').split('T');
-    const date = el('input'); date.type = 'date'; date.value = d || '';
-    const time = el('input'); time.type = 'time'; time.value = t || '';
+    // iPhone Safari draws an empty date/time input as a blank box, so each input sits invisibly
+    // on top of a label that always says what's set ("Fri, Nov 28" / "3:30pm") or what to tap.
+    const picker = (type, value, show, empty) => {
+      const wrap = el('label', 'pick' + (value ? '' : ' empty'), value ? show(value) : empty);
+      const input = el('input'); input.type = type; input.value = value || '';
+      input.onclick = (e) => e.stopPropagation();
+      wrap.append(input);
+      return [wrap, input];
+    };
+    const showDate = (v) => new Date(v + 'T00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    const showTime = (v) => { const [h, m] = v.split(':').map(Number); return (h % 12 || 12) + ':' + String(m).padStart(2, '0') + (h < 12 ? 'am' : 'pm'); };
+    const [dateBox, date] = picker('date', d, showDate, 'Pick date');
+    const [timeBox, time] = picker('time', t, showTime, 'Pick time');
     const save = () => change(item, { due: date.value ? (time.value ? date.value + 'T' + time.value : date.value) : null });
     date.onchange = save;
     time.onchange = () => { if (!date.value) date.value = new Date().toLocaleDateString('en-CA'); save(); };
-    when.append(date, time, button('No date', () => change(item, { due: null })));
+    when.append(dateBox, timeBox, button('No date', () => change(item, { due: null })));
     ed.append(when);
 
+    // Size = roughly how long it takes; "What next?" uses it to match tasks to your energy.
     const sizes = el('div', 'row');
     for (const s of ['quick', 'medium', 'big']) {
       sizes.append(button(s, () => change(item, { size: s }), item.size === s ? 'picked' : ''));
     }
+    sizes.append(el('span', 'hint', 'quick ≈ 15 min · medium ≈ 2 hrs · big = longer'));
     ed.append(sizes);
   }
 
