@@ -25,12 +25,21 @@ body {
   background: var(--bg);
   color: var(--text);
   font: 18px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  padding: env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 80px);
+  padding: 0 16px calc(env(safe-area-inset-bottom) + 80px);
   max-width: 640px;
   margin: 0 auto;
 }
 
-#add { position: sticky; top: 0; background: var(--bg); padding: 16px 0 8px; z-index: 1; }
+/* The add box stays pinned at the top while you scroll. On a home-screen iPhone app the page runs
+   under the clock and notch, so the safe-area padding lives here (not on body) and the bar's
+   background covers that strip instead of the box sliding underneath it. */
+#add {
+  position: -webkit-sticky; position: sticky; top: 0; z-index: 5;
+  background: var(--bg);
+  padding: calc(env(safe-area-inset-top) + 12px) 0 8px;
+  margin: 0 -16px; padding-left: 16px; padding-right: 16px;
+}
+#add.lifted { box-shadow: 0 6px 12px -8px rgba(0, 0, 0, .25); }
 
 #box {
   width: 100%;
@@ -44,7 +53,7 @@ body {
 }
 #box:focus { border-color: var(--accent); }
 
-nav { display: flex; gap: 6px; margin: 8px 0 16px; }
+nav { display: flex; gap: 6px; margin: 8px 0 10px; }
 nav button {
   flex: 1;
   min-height: 48px;
@@ -116,6 +125,17 @@ h2:first-child { margin-top: 0; }
   transition: opacity .2s;
 }
 #toast.show { opacity: 1; }
+#toast.act { pointer-events: auto; display: flex; align-items: center; gap: 12px; padding: 6px 6px 6px 20px; }
+#toast button {
+  min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px;
+  background: var(--card); color: var(--accent); font-size: 16px; font-weight: 600;
+}
+
+#search {
+  width: 100%; font-size: 16px; padding: 10px 14px; margin: 0 0 16px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--text); outline: none;
+}
+#search:focus { border-color: var(--accent); }
 
 /* ---------- v2 ---------- */
 li { flex-wrap: wrap; }
