@@ -44,4 +44,4 @@ Append-only. Newest entries at the bottom.
 
 ## [2026-11-27] deploy | date/time labels and size hint live
 
-- Deployed version 68fe1920. Live `app.js` has the "Pick date" labels and live `style.css` has the `.pick` styles.
+- Deployed version 68fe1920 (the bundle imports `public/app.js` and `public/style.css` directly, `worker/static.js:4`). Not checked against the live site: this cloud session's proxy blocks dump.bixjohnson.com.
