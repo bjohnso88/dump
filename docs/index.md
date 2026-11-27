@@ -9,8 +9,9 @@ repository. The rules are in [`CLAUDE.md`](CLAUDE.md).
 
 1. [[overview]] -- how the Worker, D1, the app and Claude fit together
 2. [[reminders]] -- the cron, quiet hours, the daily cap, web push
+3. [[deploy-and-keys]] -- deploying and the keys
 
-Deploy steps are in the repository `README.md`.
+User-facing deploy and device steps are in the repository `README.md`.
 
 ---
 
@@ -36,7 +37,7 @@ Deploy steps are in the repository `README.md`.
 
 ## operations
 
-<!-- TODO: pages under Install, deploy, checks, incident response. `- [[page-name]] -- one line` -->
+- [[deploy-and-keys]] -- deploying from a cloud session, where every key lives, traps
 
 ## history
 
