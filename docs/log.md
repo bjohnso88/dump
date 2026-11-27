@@ -36,3 +36,8 @@ Append-only. Newest entries at the bottom.
 
 - Deployed the sticky add box fix.
 - Re-inserted the 4 to-dos found with Time Travel (Winter coat, Storage unit, Icloud mcp, Dump can see bix-memory) with their original ids and fields, `INSERT OR IGNORE`. Items: 38 → 42.
+
+## [2026-11-27] change | date/time boxes show their value; size hint
+
+- The edit panel's date and time boxes were blank on iPhone. They now show the picked value ("Fri, Nov 28", "3:30pm") or "Pick date"/"Pick time", with the native input invisible on top ([[overview]]).
+- Added a hint under quick/medium/big: quick ≈ 15 min, medium ≈ 2 hrs, big = longer (the same scale smart add uses, `worker/claude.js:43`).
