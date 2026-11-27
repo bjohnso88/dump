@@ -9,7 +9,7 @@ sources:
   - code: public/sw.js
   - code: public/app.js
   - code: scripts/vapid.mjs
-verified_at: f1415f4
+verified_at: 52257b6
 ---
 
 The cron (`*/5 * * * *`) calls `tick` (`worker/index.js:218`). Rules, in order:

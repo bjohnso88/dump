@@ -13,7 +13,7 @@ sources:
   - code: public/app.js
   - code: public/index.html
   - code: public/style.css
-verified_at: f1415f4
+verified_at: 52257b6
 ---
 
 One Cloudflare Worker named `dump` does everything: it serves the app from `public/`
@@ -48,6 +48,8 @@ server `DELETE` for 10 seconds so the toast's Undo can put it back. There is no 
 only a clearly sideways swipe or the Delete/Drop buttons delete. Marking done/undone and moving between To-do and Ideas also get Undo (`undoable`). The search bar filters `items`
 in the browser (`renderSearch`), so it only finds what `/api/state` returned: open items plus
 anything finished in the last 8 days.
+
+> ⚠️ Keep the iPhone safe-area padding on `#add` (`public/style.css`), not on `body`. With it on `body`, the sticky add box pins at `top: 0` under the status bar and notch in the home-screen app and looks like it scrolled away.
 
 > ⚠️ `load()` must skip ids in `pendingDel`, or a re-fetch during the Undo window brings a deleted item back. `pagehide` sends pending deletes with `fetch(..., { keepalive: true })`.
 
