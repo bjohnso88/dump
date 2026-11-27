@@ -5,6 +5,7 @@ created: 2026-11-27
 updated: 2026-11-27
 sources:
   - code: wrangler.jsonc
+  - code: worker/static.js
   - code: worker/index.js
   - code: worker/claude.js
   - code: worker/time.js
@@ -14,10 +15,14 @@ verified_at: 3fe44c9
 ---
 
 One Cloudflare Worker named `dump` does everything: it serves the app from `public/`
-(Workers Static Assets), answers a small JSON API under `/api/*`, and runs the reminder
+(bundled into the Worker as text/bytes modules, `worker/static.js`), answers a small JSON API under `/api/*`, and runs the reminder
 cron every 5 minutes (`wrangler.jsonc`). Data lives in one D1 database (`migrations/0001_init.sql`):
 `items`, `settings` (key/value), `subs` (push subscriptions), `sent` (notification log).
 Reminders are on their own page: [[reminders]].
+
+> ⚠️ The app files are bundled into the Worker instead of using Workers Static Assets on purpose. Static Assets needs a separate upload step that sends its own one-time JWT in the `Authorization` header. The cloud environment's proxy overwrites that header with the saved Cloudflare token, so the upload fails with 401. Bundling avoids the upload. A new file in `public/` must also be added to the `FILES` map in `worker/static.js`.
+
+> ⚠️ The `rules` globs in `wrangler.jsonc` are relative to `worker/` (the main module's folder), so they read `../public/*.js`. Without that rule wrangler bundles `public/app.js` as Worker code instead of serving it as text.
 
 ## Auth
 
