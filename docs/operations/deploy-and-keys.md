@@ -8,7 +8,7 @@ sources:
   - code: wrangler.jsonc
   - code: scripts/vapid.mjs
   - code: worker/index.js
-verified_at: d51b5b0
+verified_at: b816cdd
 ---
 
 The user-facing steps (dashboard clicks, devices, rotating keys) are in the repository
