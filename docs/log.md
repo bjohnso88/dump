@@ -31,3 +31,8 @@ Append-only. Newest entries at the bottom.
 
 - Deployed the search bar and undoable deletes. Hold-to-delete is gone from the live app.
 - Used D1 Time Travel to find items deleted since v2 went live ([[deploy-and-keys]]). Found 4 deleted to-dos; the database was restored back to its pre-check bookmark and matched the backup.
+
+## [2026-11-27] deploy | pinned add box live; 4 deleted to-dos restored
+
+- Deployed the sticky add box fix.
+- Re-inserted the 4 to-dos found with Time Travel (Winter coat, Storage unit, Icloud mcp, Dump can see bix-memory) with their original ids and fields, `INSERT OR IGNORE`. Items: 38 → 42.
