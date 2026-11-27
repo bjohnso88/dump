@@ -11,7 +11,9 @@ sources:
   - code: worker/time.js
   - code: migrations/0001_init.sql
   - code: public/app.js
-verified_at: 261676c
+  - code: public/index.html
+  - code: public/style.css
+verified_at: fbc3fb8
 ---
 
 One Cloudflare Worker named `dump` does everything: it serves the app from `public/`
@@ -29,21 +31,29 @@ Reminders are on their own page: [[reminders]].
 Single user, single secret. The Worker secret `AUTH_TOKEN` must match the
 `Authorization: Bearer` header on every `/api/*` call (`worker/index.js:14`). The browser
 keeps it in `localStorage` under `dump-key`; a 401 clears it and shows the key screen
-(`public/app.js:33`).
+(`public/app.js:37`).
 
 > ⚠️ The token compare is constant-time on purpose (`worker/index.js:14`). Don't replace it with `===`.
 
 ## The app talks to the server optimistically
 
 `public/app.js` changes its local copy first, renders, then calls the API (`change`,
-`public/app.js:56`). New items get a client-made UUID and go through a queue in
+`public/app.js:61`). New items get a client-made UUID and go through a queue in
 `localStorage` (`dump-queue`) so a task typed on bad signal is never lost
-(`flushQueue`, `public/app.js:80`). The list is re-fetched whenever the app becomes
+(`flushQueue`, `public/app.js:115`). The list is re-fetched whenever the app becomes
 visible, which is how phone and laptop stay in sync.
+
+Deletes are the exception: `remove()` (`public/app.js:71`) hides the item at once but holds the
+server `DELETE` for 6 seconds so the toast's Undo can put it back. There is no hold-to-delete;
+only a clearly sideways swipe or the Delete/Drop buttons delete. The search bar filters `items`
+in the browser (`renderSearch`), so it only finds what `/api/state` returned: open items plus
+anything finished in the last 8 days.
+
+> ⚠️ `load()` must skip ids in `pendingDel`, or a re-fetch during the Undo window brings a deleted item back. `pagehide` sends pending deletes with `fetch(..., { keepalive: true })`.
 
 > ⚠️ `POST /api/items` is `INSERT OR IGNORE` by id, so retrying a queued add is safe. Keep it idempotent; the queue relies on it.
 
-> ⚠️ v1 kept everything in `localStorage['dump']` on one device. `load()` uploads it once via `/api/import` and renames the key to `dump-v1-backup` (`public/app.js:98`). Don't remove that until every device has opened v2.
+> ⚠️ v1 kept everything in `localStorage['dump']` on one device. `load()` uploads it once via `/api/import` and renames the key to `dump-v1-backup` (`public/app.js:131`). Don't remove that until every device has opened v2.
 
 ## Claude
 
