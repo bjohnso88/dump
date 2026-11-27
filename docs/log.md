@@ -21,3 +21,31 @@ Append-only. Newest entries at the bottom.
 ## [2026-11-27] docs | keys and deploy
 
 - README rewritten around the live setup and all five keys. Added [[deploy-and-keys]].
+
+## [2026-11-27] change | search bar, undoable deletes
+
+- Added a search bar (`renderSearch` in `public/app.js`) across to-dos, ideas and recent done items.
+- Removed long-press/right-click delete; swipe now needs a clearly sideways drag. `remove()` hides the item and waits 10 s (Undo in the toast) before the server DELETE; leaving the page sends pending deletes with `keepalive`.
+
+## [2026-11-27] deploy | search + undo live; deleted items found
+
+- Deployed the search bar and undoable deletes. Hold-to-delete is gone from the live app.
+- Used D1 Time Travel to find items deleted since v2 went live ([[deploy-and-keys]]). Found 4 deleted to-dos; the database was restored back to its pre-check bookmark and matched the backup.
+
+## [2026-11-27] deploy | pinned add box live; 4 deleted to-dos restored
+
+- Deployed the sticky add box fix.
+- Re-inserted the 4 to-dos found with Time Travel (Winter coat, Storage unit, Icloud mcp, Dump can see bix-memory) with their original ids and fields, `INSERT OR IGNORE`. Items: 38 → 42.
+
+## [2026-11-27] change | date/time boxes show their value; size hint
+
+- The edit panel's date and time boxes were blank on iPhone. They now show the picked value ("Fri, Nov 28", "3:30pm") or "Pick date"/"Pick time", with the native input invisible on top ([[overview]]).
+- Added a hint under quick/medium/big: quick ≈ 15 min, medium ≈ 2 hrs, big = longer (the same scale smart add uses, `worker/claude.js:43`).
+
+## [2026-11-27] deploy | date/time labels and size hint live
+
+- Deployed version 68fe1920 (the bundle imports `public/app.js` and `public/style.css` directly, `worker/static.js:4`). Not checked against the live site: this cloud session's proxy blocks dump.bixjohnson.com.
+
+## [2026-11-27] change | counts on the To-do and Ideas tabs
+
+- `counts()` in `public/app.js` (run from `render()`) puts the number of open to-dos and of ideas next to those tab names; nothing shows when the count is 0.
