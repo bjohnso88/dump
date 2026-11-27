@@ -19,7 +19,7 @@ let laterOpen = false;   // keep the Later fold open while you edit inside it
 const kept = new Set();
 let query = '';          // what's typed in the search bar
 const pendingDel = new Map(); // id -> { item, index, queued, timer }: deleted but still undoable
-const UNDO_MS = 6000;
+const UNDO_MS = 10000;   // how long a toast with Undo stays up
 
 function cache() {
   localStorage.setItem('dump-cache', JSON.stringify(items));
@@ -172,7 +172,7 @@ function toast(msg, action) {
   }
   t.classList.add('show');
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => t.classList.remove('show', 'act'), action ? UNDO_MS : 1800);
+  toast.timer = setTimeout(() => t.classList.remove('show', 'act'), action ? UNDO_MS : 3500);
 }
 
 function el(tag, cls, text) {
@@ -264,11 +264,11 @@ function editor(item) {
   if (item.kind === 'todo') {
     acts.append(
       button(item.doneAt ? 'Not done' : 'Mark done', () => { editing = null; toggleDone(item); }),
-      button('→ Idea', () => { editing = null; change(item, { kind: 'idea' }); toast('Moved to ideas.'); }),
+      button('→ Idea', () => { editing = null; undoable(item, { kind: 'idea' }, 'Moved to ideas.'); }),
     );
   } else {
     acts.append(button('→ To-do', () => {
-      editing = null; change(item, { kind: 'todo' }); smart(item.id); toast('Moved to to-dos.');
+      editing = null; undoable(item, { kind: 'todo' }, 'Moved to to-dos.'); smart(item.id);
     }));
   }
   acts.append(
@@ -279,10 +279,19 @@ function editor(item) {
   return ed;
 }
 
+// Change an item and offer Undo in the toast, which puts the changed fields back.
+function undoable(item, patch, msg) {
+  const before = Object.fromEntries(Object.keys(patch).map((k) => [k, item[k] ?? null]));
+  change(item, patch);
+  toast(msg, { label: 'Undo', fn: () => {
+    const now = find(item.id);
+    if (now) { change(now, before); toast('Undone.'); }
+  } });
+}
+
 function toggleDone(item) {
-  const doneAt = item.doneAt ? null : Date.now();
-  if (doneAt) toast(NICE[Math.floor(Math.random() * NICE.length)]);
-  change(item, { doneAt });
+  if (item.doneAt) return undoable(item, { doneAt: null }, 'Back on the list.');
+  undoable(item, { doneAt: Date.now() }, NICE[Math.floor(Math.random() * NICE.length)]);
 }
 
 // A row. Circle = done, tap the task = edit panel, swipe left = delete (with Undo).

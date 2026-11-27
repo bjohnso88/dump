@@ -44,8 +44,8 @@ keeps it in `localStorage` under `dump-key`; a 401 clears it and shows the key s
 visible, which is how phone and laptop stay in sync.
 
 Deletes are the exception: `remove()` (`public/app.js:71`) hides the item at once but holds the
-server `DELETE` for 6 seconds so the toast's Undo can put it back. There is no hold-to-delete;
-only a clearly sideways swipe or the Delete/Drop buttons delete. The search bar filters `items`
+server `DELETE` for 10 seconds so the toast's Undo can put it back. There is no hold-to-delete;
+only a clearly sideways swipe or the Delete/Drop buttons delete. Marking done/undone and moving between To-do and Ideas also get Undo (`undoable`). The search bar filters `items`
 in the browser (`renderSearch`), so it only finds what `/api/state` returned: open items plus
 anything finished in the last 8 days.
 
