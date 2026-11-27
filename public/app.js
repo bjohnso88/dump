@@ -17,6 +17,9 @@ let askEnergy = false;
 let busy = false;
 let laterOpen = false;   // keep the Later fold open while you edit inside it
 const kept = new Set();
+let query = '';          // what's typed in the search bar
+const pendingDel = new Map(); // id -> { item, index, queued, timer }: deleted but still undoable
+const UNDO_MS = 6000;
 
 function cache() {
   localStorage.setItem('dump-cache', JSON.stringify(items));
@@ -31,9 +34,10 @@ const today = () => dayKey(Date.now());
 const find = (id) => items.find((i) => i.id === id);
 
 // ---------- Server ----------
-async function api(method, path, body) {
+async function api(method, path, body, keepalive = false) {
   const res = await fetch('/api' + path, {
     method,
+    keepalive,
     headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
     body: body ? JSON.stringify(body) : undefined,
   });
@@ -62,11 +66,41 @@ async function change(item, patch) {
   catch (e) { if (e.message !== 'auth') toast("Couldn't save. Check your signal."); }
 }
 
-async function remove(id) {
-  items = items.filter((i) => i.id !== id);
+// Deleting hides the item right away but only tells the server after a few seconds,
+// so the Undo in the toast can bring it back exactly as it was.
+function remove(id, msg = 'Deleted.') {
+  const index = items.findIndex((i) => i.id === id);
+  if (index < 0) return;
+  const item = items[index];
+  const queued = queue.find((q) => q.id === id) || null;
+  items.splice(index, 1);
   queue = queue.filter((q) => q.id !== id);
+  if (editing === id) editing = null;
   cache();
-  try { await api('DELETE', '/items/' + encodeURIComponent(id)); } catch {}
+  const timer = setTimeout(() => commitDelete(id), UNDO_MS);
+  pendingDel.set(id, { item, index, queued, timer });
+  toast(msg, { label: 'Undo', fn: () => undoDelete(id) });
+}
+
+function undoDelete(id) {
+  const p = pendingDel.get(id);
+  if (!p) return;
+  clearTimeout(p.timer);
+  pendingDel.delete(id);
+  items.splice(Math.min(p.index, items.length), 0, p.item);
+  if (p.queued) queue.push(p.queued);
+  cache();
+  toast('Back.');
+  render();
+  if (p.queued) flushQueue().then(render);
+}
+
+function commitDelete(id, leaving = false) {
+  const p = pendingDel.get(id);
+  if (!p) return;
+  clearTimeout(p.timer);
+  pendingDel.delete(id);
+  api('DELETE', '/items/' + encodeURIComponent(id), undefined, leaving).catch(() => {});
 }
 
 async function smart(id) {
@@ -84,6 +118,7 @@ function flushQueue() {
 }
 async function doFlush() {
   for (const q of [...queue]) {
+    if (!queue.some((x) => x.id === q.id)) continue; // deleted while we were busy
     try {
       merge(await api('POST', '/items', q));
       queue = queue.filter((x) => x.id !== q.id);
@@ -108,7 +143,7 @@ async function load() {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const s = await api('GET', '/state?tz=' + encodeURIComponent(tz));
-    items = s.items;
+    items = s.items.filter((i) => !pendingDel.has(i.id));
     for (const q of queue) if (!find(q.id)) items.push({ ...q, doneAt: null, due: null, size: null });
     pick = s.pick && dayKey(s.pick.at) === today() ? s.pick : null;
     morning = s.morning;
@@ -125,12 +160,19 @@ const box = $('#box');
 
 const NICE = ['Nice job.', 'Done!', 'One less thing.', 'Look at you go.', 'Nice.', 'Handled.'];
 
-function toast(msg) {
+// action: optional { label, fn } shown as a button in the toast (used for Undo).
+function toast(msg, action) {
   const t = $('#toast');
   t.textContent = msg;
+  t.classList.toggle('act', !!action);
+  if (action) {
+    const b = el('button', '', action.label);
+    b.onclick = (e) => { e.stopPropagation(); t.classList.remove('show', 'act'); action.fn(); };
+    t.append(b);
+  }
   t.classList.add('show');
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => t.classList.remove('show'), 1800);
+  toast.timer = setTimeout(() => t.classList.remove('show', 'act'), action ? UNDO_MS : 1800);
 }
 
 function el(tag, cls, text) {
@@ -230,7 +272,7 @@ function editor(item) {
     }));
   }
   acts.append(
-    button('Delete', () => { editing = null; remove(item.id); toast('Gone.'); render(); }, 'danger'),
+    button('Delete', () => { remove(item.id); render(); }, 'danger'),
     button('Close', close),
   );
   ed.append(acts);
@@ -243,7 +285,7 @@ function toggleDone(item) {
   change(item, { doneAt });
 }
 
-// A row. Circle = done, tap the task = edit panel, swipe/hold = delete.
+// A row. Circle = done, tap the task = edit panel, swipe left = delete (with Undo).
 function li(item, buttons = [], opts = {}) {
   const e = el('li');
   e.dataset.id = item.id;
@@ -267,47 +309,51 @@ function todoRow(item, opts) {
   return e;
 }
 
-// ---------- Swipe left or long-press to delete ----------
+// ---------- Swipe left to delete ----------
+// Only a deliberate sideways swipe counts: scrolling, holding or resting a thumb on a row does nothing.
+// Every delete can be undone from the toast for a few seconds.
 function makeDeletable(e, id) {
-  let startX = 0, dx = 0, timer = null, gesture = false, skip = false;
+  let startX = 0, startY = 0, dx = 0, mode = null, skip = false, swiped = false;
 
   e.addEventListener('touchstart', (ev) => {
     skip = !!ev.target.closest('.editor, button');
     if (skip) return;
     startX = ev.touches[0].clientX;
+    startY = ev.touches[0].clientY;
     dx = 0;
-    gesture = false;
-    timer = setTimeout(() => { gesture = true; del(); }, 600);
+    mode = null; // decided on first real movement: 'swipe' or 'scroll'
   }, { passive: true });
 
   e.addEventListener('touchmove', (ev) => {
-    if (skip) return;
-    dx = ev.touches[0].clientX - startX;
-    if (Math.abs(dx) > 10) clearTimeout(timer);
-    if (dx < 0) e.style.transform = `translateX(${dx}px)`;
+    if (skip || mode === 'scroll') return;
+    const x = ev.touches[0].clientX - startX;
+    const y = ev.touches[0].clientY - startY;
+    if (!mode) {
+      if (Math.abs(x) < 12 && Math.abs(y) < 12) return;
+      mode = Math.abs(x) > Math.abs(y) * 2 && x < 0 ? 'swipe' : 'scroll';
+      if (mode === 'scroll') { e.style.transform = ''; return; }
+    }
+    dx = Math.min(0, x);
+    e.style.transform = `translateX(${dx}px)`;
   }, { passive: true });
 
-  e.addEventListener('touchend', () => {
+  const end = () => {
     if (skip) return;
-    clearTimeout(timer);
-    if (dx < -80) { gesture = true; del(); }
+    if (mode === 'swipe' && dx < -120) { swiped = true; del(); }
     else e.style.transform = '';
-  });
-
-  e.addEventListener('contextmenu', (ev) => {
-    if (ev.target.closest('.editor')) return;
-    ev.preventDefault(); gesture = true; del();
-  });
+    mode = null;
+  };
+  e.addEventListener('touchend', end);
+  e.addEventListener('touchcancel', () => { e.style.transform = ''; mode = null; });
 
   e.addEventListener('click', (ev) => {
-    if (gesture) { ev.stopImmediatePropagation(); gesture = false; }
+    if (swiped) { ev.stopImmediatePropagation(); swiped = false; }
   }, true);
 
   function del() {
     e.style.opacity = '0';
     e.style.transform = 'translateX(-100%)';
     setTimeout(() => { remove(id); render(); }, 150);
-    toast('Gone.');
   }
 }
 
@@ -325,7 +371,7 @@ function staleCards(main) {
         catch { toast("Couldn't shrink it right now."); }
         render();
       }),
-      button('Drop', () => { remove(item.id); toast('Dropped. No guilt.'); render(); }),
+      button('Drop', () => { remove(item.id, 'Dropped. No guilt.'); render(); }),
     );
     card.append(row);
     main.append(card);
@@ -410,7 +456,7 @@ function renderTodo(main) {
     [...open, ...done].forEach((i) => ul.append(todoRow(i)));
     main.append(ul);
   }
-  main.append(el('p', 'hint', 'Circle = done · tap a task to edit · swipe left = delete'));
+  main.append(el('p', 'hint', 'Circle = done · tap a task to edit · swipe left = delete (you can undo)'));
   footer(main);
 }
 
@@ -473,7 +519,7 @@ function renderWrap(main) {
       keep.classList.add('picked');
       api('PATCH', '/items/' + encodeURIComponent(item.id), {}).catch(() => {});
     }, kept.has(item.id) ? 'picked' : '');
-    const drop = button('Drop', () => { remove(item.id); render(); });
+    const drop = button('Drop', () => { remove(item.id, 'Dropped.'); render(); });
     ul.append(li(item, [keep, drop], { plain: true }));
   }
   main.append(ul);
@@ -481,6 +527,25 @@ function renderWrap(main) {
     toast('Good work today.');
     setView('todo');
   }, 'big'));
+}
+
+// Search across to-dos and ideas (open, and done ones the app still has: the last week or so).
+function renderSearch(main) {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const hits = items.filter((i) => words.every((w) => i.text.toLowerCase().includes(w)));
+  if (!hits.length) return main.append(empty(`Nothing matches "${query}".`));
+  const groups = [
+    ['To-do', hits.filter((i) => i.kind === 'todo' && !i.doneAt)],
+    ['Ideas', hits.filter((i) => i.kind === 'idea')],
+    ['Done', hits.filter((i) => i.kind === 'todo' && i.doneAt).sort((a, b) => b.doneAt - a.doneAt)],
+  ];
+  for (const [label, list] of groups) {
+    if (!list.length) continue;
+    main.append(heading(label));
+    const ul = el('ul');
+    list.forEach((i) => ul.append(todoRow(i)));
+    main.append(ul);
+  }
 }
 
 function renderKey(main) {
@@ -502,6 +567,7 @@ function render() {
   const main = $('#view');
   main.innerHTML = '';
   if (!token) return renderKey(main);
+  if (query.trim()) return renderSearch(main);
   ({ todo: renderTodo, ideas: renderIdeas, week: renderWeek, wrap: renderWrap })[view](main);
 }
 
@@ -574,8 +640,15 @@ $('#add').onsubmit = (e) => {
   flushQueue().then(render);
 };
 
+const search = $('#search');
+search.oninput = () => { query = search.value; editing = null; render(); };
+search.onkeydown = (e) => { if (e.key === 'Escape') { search.value = ''; search.oninput(); } };
+
 document.querySelectorAll('nav button').forEach((b) =>
-  b.onclick = () => { setView(b.dataset.view); box.focus(); });
+  b.onclick = () => { search.value = ''; query = ''; setView(b.dataset.view); box.focus(); });
+
+// Leaving the app finishes any deletes still waiting on Undo.
+window.addEventListener('pagehide', () => { for (const id of [...pendingDel.keys()]) commitDelete(id, true); });
 
 // Pick up changes from your other device when you come back to the app.
 document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });

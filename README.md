@@ -3,7 +3,9 @@
 A calm, zero-friction to-do app. Type, hit enter, done. Now synced between phone and laptop.
 
 - Type anything → it's a to-do. Start with `idea:` → it goes to Ideas.
-- Tap a to-do to mark it done. Swipe left or hold to delete.
+- Tap the circle to mark a to-do done; tap the task to edit it. Swipe left to delete. Every delete
+  shows **Undo** for a few seconds, and holding a row no longer deletes it.
+- **Search:** the bar under the tabs finds to-dos and ideas (and anything finished in the last week).
 - **Smart add:** Claude quietly pulls out a due date/time ("call dentist tomorrow 3pm") and a size
   (quick / medium / big). It shows as small gray text. Tap it to fix.
 - **Prioritize:** tap it, pick your energy (low / med / high), get your top 3 with one line on why,

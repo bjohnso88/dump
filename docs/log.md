@@ -21,3 +21,8 @@ Append-only. Newest entries at the bottom.
 ## [2026-11-27] docs | keys and deploy
 
 - README rewritten around the live setup and all five keys. Added [[deploy-and-keys]].
+
+## [2026-11-27] change | search bar, undoable deletes
+
+- Added a search bar (`renderSearch` in `public/app.js`) across to-dos, ideas and recent done items.
+- Removed long-press/right-click delete; swipe now needs a clearly sideways drag. `remove()` hides the item and waits 6 s (Undo in the toast) before the server DELETE; leaving the page sends pending deletes with `keepalive`.
