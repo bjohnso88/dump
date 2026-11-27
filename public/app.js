@@ -656,6 +656,9 @@ search.onkeydown = (e) => { if (e.key === 'Escape') { search.value = ''; search.
 document.querySelectorAll('nav button').forEach((b) =>
   b.onclick = () => { search.value = ''; query = ''; setView(b.dataset.view); box.focus(); });
 
+// A soft shadow under the pinned add box once the list scrolls beneath it.
+window.addEventListener('scroll', () => $('#add').classList.toggle('lifted', scrollY > 4), { passive: true });
+
 // Leaving the app finishes any deletes still waiting on Undo.
 window.addEventListener('pagehide', () => { for (const id of [...pendingDel.keys()]) commitDelete(id, true); });
 
