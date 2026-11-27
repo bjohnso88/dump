@@ -12,3 +12,8 @@ Append-only. Newest entries at the bottom.
   and `.claude/scripts/docs-lint.py`
 
 - Started in grow mode. Wrote [[overview]] and [[reminders]] from the v2 code just built (worker/, public/, migrations/). Other areas get pages as work touches them.
+
+## [2026-11-27] deploy | v2 live on dump.bixjohnson.com
+
+- D1 `dump` created and migrated through the Cloudflare API. Worker deployed with wrangler using a token saved as a network secret. VAPID keys set as secrets.
+- Switched from Workers Static Assets to bundled files ([[overview]]), because the asset upload's JWT gets overwritten by the proxy.

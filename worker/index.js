@@ -1,6 +1,7 @@
 // Dump v2 Worker: serves the app (static assets), a small JSON API on D1, and the reminder cron.
 import { smartParse, prioritize, shrink } from './claude.js';
 import { sendToAll } from './push.js';
+import { serveStatic } from './static.js';
 import { safeTz, localParts, localToUtc, dueToUtc, DUE_RE } from './time.js';
 
 const DAY = 86400000;
@@ -233,7 +234,7 @@ export async function tick(env, now = Date.now()) {
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
-    if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(req);
+    if (!url.pathname.startsWith('/api/')) return serveStatic(url);
     if (!authed(req, env)) return json({ error: 'bad key' }, 401);
     try {
       return await route(req, env, url, ctx);

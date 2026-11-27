@@ -4,10 +4,14 @@
   "main": "worker/index.js",
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat"],
-  "assets": { "directory": "public", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
+  // The app files in public/ are bundled into the Worker as text/bytes (worker/static.js).
+  "rules": [
+    { "type": "Text", "globs": ["../public/*.html", "../public/*.js", "../public/*.css", "../public/*.json"], "fallthrough": true },
+    { "type": "Data", "globs": ["../public/*.png"], "fallthrough": true }
+  ],
   "d1_databases": [
     // Paste the database_id that `npx wrangler d1 create dump` prints.
-    { "binding": "DB", "database_name": "dump", "database_id": "PASTE_DATABASE_ID_HERE", "migrations_dir": "migrations" }
+    { "binding": "DB", "database_name": "dump", "database_id": "c93be9ea-543d-49fb-9223-42fd2f883bd4", "migrations_dir": "migrations" }
   ],
   // Every 5 minutes. All the quiet-hours / daily-cap logic lives in worker/index.js.
   "triggers": { "crons": ["*/5 * * * *"] },
