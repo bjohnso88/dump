@@ -9,7 +9,7 @@ sources:
   - code: public/sw.js
   - code: public/app.js
   - code: scripts/vapid.mjs
-verified_at: fbc3fb8
+verified_at: f1415f4
 ---
 
 The cron (`*/5 * * * *`) calls `tick` (`worker/index.js:218`). Rules, in order:
@@ -44,7 +44,7 @@ The subject is the `VAPID_SUBJECT` var.
 > ⚠️ iPhone push only works from the home-screen install, and iOS shows no notification action buttons. That is why Do it / Shrink / Drop live in the app, not in the notification.
 
 `public/sw.js` shows the notification and focuses or opens the app on tap. The app
-re-posts its subscription on every load (`checkPush`, `public/app.js:588`) so a wiped
+re-posts its subscription on every load (`checkPush`, `public/app.js:597`) so a wiped
 `subs` table heals itself. "Turn on reminders" sends `hello: true`, which triggers a
 "Reminders are on." test push.
 
