@@ -13,7 +13,7 @@ sources:
   - code: public/app.js
   - code: public/index.html
   - code: public/style.css
-verified_at: 52257b6
+verified_at: 72f8779
 ---
 
 One Cloudflare Worker named `dump` does everything: it serves the app from `public/`

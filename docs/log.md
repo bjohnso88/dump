@@ -41,3 +41,7 @@ Append-only. Newest entries at the bottom.
 
 - The edit panel's date and time boxes were blank on iPhone. They now show the picked value ("Fri, Nov 28", "3:30pm") or "Pick date"/"Pick time", with the native input invisible on top ([[overview]]).
 - Added a hint under quick/medium/big: quick ≈ 15 min, medium ≈ 2 hrs, big = longer (the same scale smart add uses, `worker/claude.js:43`).
+
+## [2026-11-27] deploy | date/time labels and size hint live
+
+- Deployed version 68fe1920. Live `app.js` has the "Pick date" labels and live `style.css` has the `.pick` styles.
